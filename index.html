@@ -5,7 +5,7 @@
 
 <style>
 /*
- * Iqbal Capital — Personal Portfolio Dashboard
+ * Iqbal Capital — Personal Portfolio Dashboard v3
  * Dark-first: navy-dark bg, BTC orange accent, emerald gains
  * Type: Inter (UI) + JetBrains Mono (numbers)
  */
@@ -87,20 +87,23 @@ body{background:var(--bg);color:var(--fg);font-family:'Inter',system-ui,sans-ser
 .dchip.active{color:var(--fg);background:var(--accent-bg);border-color:var(--accent);}
 .drange{font-size:12px;color:var(--fg3);margin-left:4px;}
 
-/* ── BTC BANNER ── */
-.btc-banner{
-  background:var(--btc-bg);border:1px solid rgba(247,147,26,.22);border-radius:var(--r);
-  padding:14px 18px;margin-bottom:18px;
-  display:flex;align-items:center;gap:14px;flex-wrap:wrap;
+/* ── PORTFOLIO BANNER ── */
+.pf-banner{
+  background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r);
+  padding:16px 20px;margin-bottom:18px;
+  display:flex;align-items:flex-start;gap:20px;flex-wrap:wrap;
 }
-.btc-logo{width:38px;height:38px;background:var(--btc);border-radius:50%;
-  display:flex;align-items:center;justify-content:center;font-size:18px;font-weight:800;
-  color:#fff;flex-shrink:0;font-style:italic;}
-.btc-info{flex:1;min-width:160px;}
-.btc-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--fg2);margin-bottom:1px;}
-.btc-idr{font-size:22px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.4px;line-height:1.2;}
-.btc-usd{font-size:12px;color:var(--fg2);font-variant-numeric:tabular-nums;}
-.btc-meta{display:flex;flex-direction:column;align-items:flex-end;gap:4px;}
+.pf-left{flex:1;min-width:200px;}
+.pf-lbl{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;color:var(--fg2);margin-bottom:3px;}
+.pf-total{font-size:26px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.5px;line-height:1.2;}
+.pf-change-row{display:flex;align-items:center;gap:8px;margin-top:5px;flex-wrap:wrap;}
+.pf-assets{display:flex;gap:14px;flex-wrap:wrap;align-items:center;padding-top:4px;}
+.pf-asset-item{display:flex;flex-direction:column;align-items:center;gap:3px;min-width:42px;}
+.pf-aico{width:30px;height:30px;border-radius:50%;display:flex;align-items:center;justify-content:center;
+  font-size:9px;font-weight:800;color:#fff;flex-shrink:0;}
+.pf-asym{font-size:10px;font-weight:700;color:var(--fg);line-height:1;}
+.pf-aprice{font-size:10px;font-variant-numeric:tabular-nums;color:var(--fg2);white-space:nowrap;}
+.pf-meta{display:flex;flex-direction:column;align-items:flex-end;gap:6px;min-width:140px;}
 .spill{display:flex;align-items:center;gap:5px;font-size:11px;font-weight:600;padding:3px 9px;border-radius:10px;}
 .spill.live{background:var(--green-bg);color:var(--green);}
 .spill.cached{background:rgba(245,158,11,.1);color:var(--gold);}
@@ -108,10 +111,10 @@ body{background:var(--bg);color:var(--fg);font-family:'Inter',system-ui,sans-ser
 .dot{width:6px;height:6px;border-radius:50%;background:currentColor;}
 .dot.pulse{animation:pulse 2s infinite;}
 @keyframes pulse{0%,100%{opacity:1}50%{opacity:.3}}
-.btc-ts{font-size:11px;color:var(--fg3);text-align:right;}
+.pf-ts{font-size:11px;color:var(--fg3);text-align:right;}
 .rate-row{display:flex;align-items:center;gap:6px;font-size:12px;color:var(--fg2);}
 .e-sm{background:var(--bg-input);border:1px solid var(--border2);border-radius:5px;color:var(--fg);
-  font-family:inherit;font-size:12px;padding:3px 7px;width:72px;outline:none;}
+  font-family:inherit;font-size:12px;padding:3px 7px;width:76px;outline:none;}
 .e-sm:focus{border-color:var(--accent);}
 
 /* ── METRICS ── */
@@ -128,8 +131,13 @@ body{background:var(--bg);color:var(--fg);font-family:'Inter',system-ui,sans-ser
 /* ── CHART ── */
 .chart-card{background:var(--bg-card);border:1px solid var(--border);border-radius:var(--r);
   padding:16px 20px 12px;margin-bottom:18px;}
-.chart-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;}
+.chart-hdr{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px;flex-wrap:wrap;gap:8px;}
 .chart-ttl{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.7px;color:var(--fg2);}
+.chart-meta{display:flex;align-items:center;gap:12px;}
+.chart-change{font-size:14px;font-weight:700;font-variant-numeric:tabular-nums;letter-spacing:-.2px;}
+.chart-change.pos{color:var(--green);}
+.chart-change.neg{color:var(--red);}
+.chart-sub{font-size:11px;color:var(--fg3);}
 .chart-wrap{position:relative;height:180px;}
 
 /* ── EDIT BAR ── */
@@ -146,7 +154,7 @@ body{background:var(--bg);color:var(--fg);font-family:'Inter',system-ui,sans-ser
 .badge{background:var(--bg-hover);border:1px solid var(--border);border-radius:4px;
   padding:1px 6px;font-size:10px;font-weight:700;color:var(--fg3);}
 .tbl-wrap{border:1px solid var(--border);border-radius:var(--r);overflow:hidden;overflow-x:auto;}
-table{width:100%;border-collapse:collapse;min-width:580px;}
+table{width:100%;border-collapse:collapse;min-width:640px;}
 thead th{background:var(--bg-card);padding:9px 14px;text-align:right;font-size:10px;font-weight:700;
   text-transform:uppercase;letter-spacing:.7px;color:var(--fg3);white-space:nowrap;
   border-bottom:1px solid var(--border);}
@@ -161,6 +169,7 @@ td:first-child{text-align:left;}
   font-size:10px;font-weight:800;color:#fff;flex-shrink:0;}
 .aname{font-size:14px;font-weight:600;color:var(--fg);line-height:1.2;}
 .afull{font-size:11px;color:var(--fg2);}
+.apair{font-size:10px;color:var(--fg3);margin-top:1px;letter-spacing:.3px;}
 .rpill{display:inline-flex;align-items:center;padding:3px 8px;border-radius:5px;
   font-size:12px;font-weight:600;font-variant-numeric:tabular-nums;}
 .rpill.pos{background:var(--green-bg);color:var(--green);}
@@ -174,6 +183,9 @@ td:first-child{text-align:left;}
   font-family:inherit;font-size:13px;font-variant-numeric:tabular-nums;padding:4px 8px;width:130px;
   text-align:right;outline:none;}
 .e-input:focus{box-shadow:0 0 0 2px rgba(59,130,246,.15);}
+.td-avg{display:flex;flex-direction:column;align-items:flex-end;gap:1px;}
+.td-avg .mono{font-size:13px;}
+.td-avg .sub{font-size:10px;color:var(--fg3);}
 
 /* ── FOOTER ── */
 .footer{margin-top:28px;padding-top:18px;border-top:1px solid var(--border);
@@ -234,25 +246,30 @@ td:first-child{text-align:left;}
     </button>
   </div>
 
-  <!-- BTC BANNER -->
-  <div class="btc-banner">
-    <div class="btc-logo">₿</div>
-    <div class="btc-info">
-      <div class="btc-lbl">Bitcoin · BTC/IDR — Live Price</div>
-      <div class="btc-idr" id="btcIDR">—</div>
-      <div class="btc-usd" id="btcUSD">$ —</div>
+  <!-- PORTFOLIO BANNER -->
+  <div class="pf-banner">
+    <div class="pf-left">
+      <div class="pf-lbl">Total Portfolio · Binance Live</div>
+      <div class="pf-total" id="pfTotalVal">IDR —</div>
+      <div class="pf-change-row">
+        <span class="rpill offline" id="pf24hPill">— 24h</span>
+        <span style="font-size:11px;color:var(--fg3);">pergerakan hari ini</span>
+      </div>
     </div>
-    <div class="btc-meta">
+    <div class="pf-assets" id="pfAssets">
+      <!-- filled by JS -->
+    </div>
+    <div class="pf-meta">
       <div class="spill offline" id="pStatus">
         <span class="dot" id="sDot"></span>
         <span id="sText">Loading…</span>
       </div>
-      <div class="btc-ts" id="btcTs">—</div>
-    </div>
-    <div class="rate-row">
-      <span>USD/IDR</span>
-      <input class="e-sm" id="rateInput" type="number" value="15900" title="Set USD/IDR rate">
-      <button class="btn" id="rateBtn" style="padding:4px 10px;font-size:12px;">Set</button>
+      <div class="pf-ts" id="pfTs">—</div>
+      <div class="rate-row">
+        <span>USDT/IDR</span>
+        <input class="e-sm" id="rateInput" type="number" value="16200" title="Set USDT/IDR rate manual">
+        <button class="btn" id="rateBtn" style="padding:4px 10px;font-size:12px;">Set</button>
+      </div>
     </div>
   </div>
 
@@ -266,17 +283,17 @@ td:first-child{text-align:left;}
     <div class="metric">
       <div class="m-lbl">Capital Gain</div>
       <div class="m-val pos" id="mCap">+1.13%</div>
-      <div class="m-sub" id="mCapAmt">Rp 81,985.05</div>
+      <div class="m-sub" id="mCapAmt">Rp 56,508.09</div>
     </div>
     <div class="metric">
       <div class="m-lbl">Currency Gain</div>
       <div class="m-val pos" id="mCur">+9.89%</div>
-      <div class="m-sub" id="mCurAmt">Rp 718,522.48</div>
+      <div class="m-sub" id="mCurAmt">Rp 493,074.86</div>
     </div>
     <div class="metric">
       <div class="m-lbl">Total Return</div>
       <div class="m-val pos" id="mTot">+11.02%</div>
-      <div class="m-sub" id="mTotAmt">Rp 800,507.53</div>
+      <div class="m-sub" id="mTotAmt">Rp 549,582.95</div>
     </div>
   </div>
 
@@ -284,7 +301,10 @@ td:first-child{text-align:left;}
   <div class="chart-card">
     <div class="chart-hdr">
       <div class="chart-ttl">Investment Value</div>
-      <div style="font-size:11px;color:var(--fg3);" id="chartSub">All time · IDR</div>
+      <div class="chart-meta">
+        <span class="chart-change pos" id="chartChangePct">—</span>
+        <span class="chart-sub" id="chartSub">Semua Waktu · IDR</span>
+      </div>
     </div>
     <div class="chart-wrap">
       <canvas id="pfChart"></canvas>
@@ -306,12 +326,17 @@ td:first-child{text-align:left;}
   <div class="section">
     <div class="sec-hdr">
       <div class="sec-lbl">Crypto <span class="badge">5</span></div>
-      <div style="font-size:11px;color:var(--fg3);">Sorted by value</div>
+      <div style="font-size:11px;color:var(--fg3);">Harga live · Binance</div>
     </div>
     <div class="tbl-wrap">
       <table>
         <thead><tr>
-          <th>Asset</th><th>Avg Buy Price</th><th>Quantity</th><th>Value</th><th>Return</th>
+          <th>Asset</th>
+          <th>Avg Buy Price</th>
+          <th>Price (USDT)</th>
+          <th>Quantity</th>
+          <th>Value</th>
+          <th>Return</th>
         </tr></thead>
         <tbody id="cBody"></tbody>
         <tfoot id="cFoot"></tfoot>
@@ -323,7 +348,7 @@ td:first-child{text-align:left;}
   <div class="section">
     <div class="sec-hdr">
       <div class="sec-lbl">IDX <span class="badge">2</span></div>
-      <div style="font-size:11px;color:var(--fg3);">Indonesian stocks</div>
+      <div style="font-size:11px;color:var(--fg3);">Saham Indonesia</div>
     </div>
     <div class="tbl-wrap">
       <table>
@@ -357,22 +382,33 @@ td:first-child{text-align:left;}
 
 <script>
 // ═══════════════════════════════════════════
-// IQBAL CAPITAL PORTFOLIO TRACKER v1.0
+// IQBAL CAPITAL PORTFOLIO TRACKER v3.0
+// Multi-asset Binance live · USDT/IDR dynamic
 // ═══════════════════════════════════════════
 
 const SK = 'iqbal_pf_v1';
 
 const DEF = {
-  usdIdrRate: 15900,
-  lastBtcIDR: 1469069432,
-  lastBtcUSD: 92400,
+  usdIdrRate: 16200,
+  origUSDTIDR: 15900,       // USDT/IDR rate at time of BTC purchase
+  lastUSDTIDR: 16200,
+  lastBtcIDR: 1452947681,
+  lastBtcUSD: 89700,
   lastBtcTime: null,
+  lastLivePrices: {
+    BTC: 89700,
+    ETH: 2850,
+    SOL: 178,
+    USDT: 1.0,
+    XRP: 2.15,
+  },
   crypto: [
-    {symbol:'BTC', name:'Bitcoin',  qty:0.00353763, avgBuy:1408415000, costBase:4982154.91, retPct:3.96,   color:'#F7931A', active:true},
-    {symbol:'ETH', name:'Ethereum', qty:0,          avgBuy:0,          costBase:0,          retPct:31.42,  color:'#627EEA', active:false},
-    {symbol:'SOL', name:'Solana',   qty:0,          avgBuy:0,          costBase:0,          retPct:6.19,   color:'#9945FF', active:false},
-    {symbol:'USDT',name:'Tether',   qty:0,          avgBuy:0,          costBase:0,          retPct:4.47,   color:'#26A17B', active:false},
-    {symbol:'XRP', name:'XRP',      qty:0,          avgBuy:0,          costBase:0,          retPct:18.99,  color:'#00AAE4', active:false},
+    // avgBuyUSDT: BTC/USDT price when purchased
+    {symbol:'BTC', name:'Bitcoin',  qty:0.00353763, avgBuy:1408415000, avgBuyUSDT:88580, costBase:4982154.91, retPct:3.96,  color:'#F7931A', active:true},
+    {symbol:'ETH', name:'Ethereum', qty:0,          avgBuy:0,          avgBuyUSDT:0,     costBase:0,          retPct:31.42, color:'#627EEA', active:false},
+    {symbol:'SOL', name:'Solana',   qty:0,          avgBuy:0,          avgBuyUSDT:0,     costBase:0,          retPct:6.19,  color:'#9945FF', active:false},
+    {symbol:'USDT',name:'Tether',   qty:0,          avgBuy:0,          avgBuyUSDT:0,     costBase:0,          retPct:4.47,  color:'#26A17B', active:false},
+    {symbol:'XRP', name:'XRP',      qty:0,          avgBuy:0,          avgBuyUSDT:0,     costBase:0,          retPct:18.99, color:'#00AAE4', active:false},
   ],
   idx: [
     {symbol:'BACH',name:'Bank China Const.',qty:0,avgBuy:560.67, costBase:0,retPct:1.30,  color:'#E53E3E',active:false},
@@ -387,37 +423,37 @@ const CHART_PERIODS = {
   today: {
     labels:['00:00','02:00','04:00','06:00','08:00','10:00','12:00','14:00','16:00','18:00','20:00','Now'],
     values:[5180000,5175000,5168000,5172000,5185000,5192000,5188000,5195000,5199000,5201000,5198000,5196473],
-    range:'24/10/2026',
+    range:'25/10/2026',
     sub:'Today · IDR'
   },
   '7d': {
-    labels:['18 Okt','19 Okt','20 Okt','21 Okt','22 Okt','23 Okt','24 Okt'],
+    labels:['19 Okt','20 Okt','21 Okt','22 Okt','23 Okt','24 Okt','25 Okt'],
     values:[5120000,5085000,5140000,5160000,5175000,5188000,5196473],
-    range:'18/10/2026 – 24/10/2026',
+    range:'19/10/2026 – 25/10/2026',
     sub:'7 Hari · IDR'
   },
   '12m': {
     labels:['Nov\'25','Des\'25','Jan\'26','Feb\'26','Mar\'26','Apr\'26','Mei\'26','Jun\'26','Jul\'26','Agu\'26','Sep\'26','Okt\'26'],
     values:[4950000,5050000,5100000,5150000,5250000,5400000,5350000,5280000,5300000,5250000,5220000,5196473],
-    range:'24/10/2025 – 24/10/2026',
+    range:'25/10/2025 – 25/10/2026',
     sub:'12 Bulan · IDR'
   },
   ytd: {
     labels:['Jan\'26','Feb\'26','Mar\'26','Apr\'26','Mei\'26','Jun\'26','Jul\'26','Agu\'26','Sep\'26','Okt\'26'],
     values:[5100000,5150000,5250000,5400000,5350000,5280000,5300000,5250000,5220000,5196473],
-    range:'01/01/2026 – 24/10/2026',
+    range:'01/01/2026 – 25/10/2026',
     sub:'Year to Date · IDR'
   },
   fy: {
     labels:['Jul\'25','Agu\'25','Sep\'25','Okt\'25','Nov\'25','Des\'25','Jan\'26','Feb\'26','Mar\'26','Apr\'26','Mei\'26','Jun\'26','Jul\'26','Agu\'26','Sep\'26','Okt\'26'],
     values:[4700000,4780000,4820000,4850000,4950000,5050000,5100000,5150000,5250000,5400000,5350000,5280000,5300000,5250000,5220000,5196473],
-    range:'01/07/2025 – 24/10/2026',
+    range:'01/07/2025 – 25/10/2026',
     sub:'Financial Year · IDR'
   },
   all: {
     labels:['Jul\'24','Sep\'24','Nov\'24','Feb\'25','Mei\'25','Jul\'25','Okt\'25','Jan\'26','Apr\'26','Jul\'26','Okt\'26'],
     values:[2800000,3100000,4050000,4400000,5200000,4700000,4850000,5100000,5400000,5300000,5196473],
-    range:'10/07/2024 – 24/10/2026',
+    range:'10/07/2024 – 25/10/2026',
     sub:'Semua Waktu · IDR'
   }
 };
@@ -425,70 +461,184 @@ const CHART_PERIODS = {
 // ─── STATE ───
 let S = loadS();
 let editMode = false;
-let btcIDR = S.lastBtcIDR || DEF.lastBtcIDR;
-let btcUSD = S.lastBtcUSD || DEF.lastBtcUSD;
 let chart = null;
 let activePeriod = 'all';
+
+// Live price state (USD per unit)
+let livePrices = (S.lastLivePrices && S.lastLivePrices.BTC)
+  ? {...S.lastLivePrices}
+  : {...DEF.lastLivePrices};
+let usdtIDR = S.lastUSDTIDR || DEF.lastUSDTIDR;
+// Derived for compatibility
+let btcIDR = Math.round((livePrices.BTC || DEF.lastBtcUSD) * usdtIDR);
+let btcUSD = livePrices.BTC || DEF.lastBtcUSD;
 
 function loadS(){
   try{
     const raw = JSON.parse(localStorage.getItem(SK));
     if(!raw) return JSON.parse(JSON.stringify(DEF));
-    return Object.assign(JSON.parse(JSON.stringify(DEF)),raw,
-      {crypto:raw.crypto||DEF.crypto,idx:raw.idx||DEF.idx});
+    // Deep merge: keep DEF structure, overlay saved values
+    const base = JSON.parse(JSON.stringify(DEF));
+    const merged = Object.assign(base, raw);
+    // Restore crypto/idx arrays with DEF as fallback
+    merged.crypto = (raw.crypto || DEF.crypto).map((a,i) => Object.assign({...DEF.crypto[i]}, a));
+    merged.idx = raw.idx || DEF.idx;
+    return merged;
   }catch(e){ return JSON.parse(JSON.stringify(DEF)); }
 }
 function saveS(){ try{localStorage.setItem(SK,JSON.stringify(S));}catch(e){} }
 
-// ─── PRICE FETCH ───
-async function fetchPrice(){
-  setStatus('offline','Fetching…');
-  // Try CoinGecko (IDR native)
+// ─── FETCH ALL PRICES (Binance + CoinGecko fallback) ───
+async function fetchAllPrices(){
+  setBannerStatus('offline','Fetching…');
+
+  const symbols = ['BTCUSDT','ETHUSDT','SOLUSDT','XRPUSDT'];
+  let binancePrices = null;
+  let newUSDTIDR = null;
+  let priceSource = 'offline';
+
+  // 1. Try Binance batch — all USDT pairs
   try{
-    const r = await fetch('https://api.coingecko.com/api/v3/simple/price?ids=bitcoin&vs_currencies=idr,usd',
-      {signal:AbortSignal.timeout(7000)});
+    const q = encodeURIComponent(JSON.stringify(symbols));
+    const r = await fetch(
+      `https://api.binance.com/api/v3/ticker/price?symbols=${q}`,
+      {signal: AbortSignal.timeout(8000)});
     if(r.ok){
-      const d=await r.json();
-      if(d.bitcoin){
-        btcIDR=d.bitcoin.idr; btcUSD=d.bitcoin.usd;
-        persistPrice(); showPrice('live'); recalc(); return;
+      const data = await r.json();
+      binancePrices = {};
+      data.forEach(d => {
+        const sym = d.symbol.replace('USDT','');
+        binancePrices[sym] = parseFloat(d.price);
+      });
+      priceSource = 'live';
+    }
+  }catch(e){}
+
+  // 2. Try CoinGecko for USDT/IDR rate (Binance doesn't have USDTIDR spot)
+  try{
+    const r = await fetch(
+      'https://api.coingecko.com/api/v3/simple/price?ids=tether&vs_currencies=idr',
+      {signal: AbortSignal.timeout(8000)});
+    if(r.ok){
+      const d = await r.json();
+      if(d.tether && d.tether.idr) newUSDTIDR = d.tether.idr;
+    }
+  }catch(e){}
+
+  // 3. If Binance failed, try CoinGecko for BTC/ETH/SOL/XRP too
+  if(!binancePrices){
+    try{
+      const r = await fetch(
+        'https://api.coingecko.com/api/v3/simple/price?ids=bitcoin,ethereum,solana,ripple&vs_currencies=usd',
+        {signal: AbortSignal.timeout(8000)});
+      if(r.ok){
+        const d = await r.json();
+        binancePrices = {};
+        if(d.bitcoin) binancePrices.BTC = d.bitcoin.usd;
+        if(d.ethereum) binancePrices.ETH = d.ethereum.usd;
+        if(d.solana) binancePrices.SOL = d.solana.usd;
+        if(d.ripple) binancePrices.XRP = d.ripple.usd;
+        priceSource = binancePrices.BTC ? 'live' : 'offline';
       }
+    }catch(e){}
+  }
+
+  // 4. Update live prices
+  if(binancePrices){
+    if(binancePrices.BTC) livePrices.BTC = binancePrices.BTC;
+    if(binancePrices.ETH) livePrices.ETH = binancePrices.ETH;
+    if(binancePrices.SOL) livePrices.SOL = binancePrices.SOL;
+    if(binancePrices.XRP) livePrices.XRP = binancePrices.XRP;
+    livePrices.USDT = 1.0;
+  }
+
+  // 5. Update USDT/IDR rate
+  if(newUSDTIDR){
+    usdtIDR = newUSDTIDR;
+  } else {
+    // Use manual rate from state
+    usdtIDR = S.usdIdrRate || DEF.usdIdrRate;
+  }
+
+  // 6. Derived BTC values for compatibility
+  btcUSD = livePrices.BTC || DEF.lastBtcUSD;
+  btcIDR = Math.round(btcUSD * usdtIDR);
+
+  // 7. Fallback to cached if nothing worked
+  if(priceSource === 'offline' && S.lastLivePrices && S.lastLivePrices.BTC){
+    livePrices = {...S.lastLivePrices};
+    btcUSD = livePrices.BTC;
+    btcIDR = Math.round(btcUSD * usdtIDR);
+    priceSource = 'cached';
+  }
+
+  // 8. Persist to localStorage
+  S.lastLivePrices = {...livePrices};
+  S.lastUSDTIDR = usdtIDR;
+  S.lastBtcIDR = btcIDR;
+  S.lastBtcUSD = btcUSD;
+  S.lastBtcTime = new Date().toISOString();
+  saveS();
+
+  setBannerStatus(priceSource, {live:'LIVE', cached:'CACHED', offline:'OFFLINE'}[priceSource]);
+  updateBanner();
+  recalc();
+}
+
+// ─── BANNER STATUS ───
+function setBannerStatus(st, txt){
+  const p = document.getElementById('pStatus');
+  const d = document.getElementById('sDot');
+  const s = document.getElementById('sText');
+  p.className = 'spill ' + st;
+  d.className = 'dot' + (st==='live' ? ' pulse' : '');
+  s.textContent = txt;
+}
+
+// ─── UPDATE PORTFOLIO BANNER ───
+function updateBanner(){
+  // Total portfolio IDR (all active positions)
+  let totalIDR = 0;
+  S.crypto.forEach(a => {
+    if(a.active && a.qty > 0){
+      const usd = a.symbol === 'USDT' ? 1.0 : (livePrices[a.symbol] || 0);
+      totalIDR += a.qty * usd * usdtIDR;
     }
-  }catch(e){}
-  // Try Binance
-  try{
-    const r=await fetch('https://api.binance.com/api/v3/ticker/price?symbol=BTCUSDT',
-      {signal:AbortSignal.timeout(7000)});
-    if(r.ok){
-      const d=await r.json();
-      btcUSD=parseFloat(d.price);
-      btcIDR=Math.round(btcUSD*S.usdIdrRate);
-      persistPrice(); showPrice('live'); recalc(); return;
-    }
-  }catch(e){}
-  // Fallback
-  if(S.lastBtcIDR){btcIDR=S.lastBtcIDR;btcUSD=S.lastBtcUSD;showPrice('cached');recalc();}
-  else{btcIDR=DEF.lastBtcIDR;btcUSD=DEF.lastBtcUSD;showPrice('offline');recalc();}
-}
+  });
 
-function persistPrice(){
-  S.lastBtcIDR=btcIDR; S.lastBtcUSD=btcUSD;
-  S.lastBtcTime=new Date().toISOString(); saveS();
-}
+  document.getElementById('pfTotalVal').textContent = fIDR(totalIDR);
 
-function showPrice(status){
-  document.getElementById('btcIDR').textContent=fIDR(btcIDR);
-  document.getElementById('btcUSD').textContent='$'+btcUSD.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
-  document.getElementById('btcTs').textContent=S.lastBtcTime
-    ?'Updated '+new Date(S.lastBtcTime).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'}):'—';
-  setStatus(status,{live:'LIVE',cached:'CACHED',offline:'OFFLINE'}[status]);
-}
+  // 24h change: compare with start of today's chart data
+  const todayVals = CHART_PERIODS.today.values;
+  const todayStart = todayVals[0];
+  const change24h = todayStart > 0 ? (totalIDR - todayStart) / todayStart * 100 : 0;
+  const change24hAmt = totalIDR - todayStart;
+  const pf24h = document.getElementById('pf24hPill');
+  const pf24hClass = change24h >= 0 ? 'pos' : 'neg';
+  pf24h.className = 'rpill ' + pf24hClass;
+  const sign = change24h >= 0 ? '+' : '';
+  pf24h.innerHTML = `${sign}${change24h.toFixed(2)}% &nbsp;<span style="font-weight:400;opacity:.8;">(${change24hAmt >= 0 ? '+' : '-'}${fRp(Math.abs(change24hAmt))})</span> 24h`;
 
-function setStatus(st,txt){
-  const p=document.getElementById('pStatus'),d=document.getElementById('sDot'),s=document.getElementById('sText');
-  p.className='spill '+st;
-  d.className='dot'+(st==='live'?' pulse':'');
-  s.textContent=txt;
+  // Timestamp
+  document.getElementById('pfTs').textContent = S.lastBtcTime
+    ? 'Updated ' + new Date(S.lastBtcTime).toLocaleTimeString('id-ID',{hour:'2-digit',minute:'2-digit'})
+    : '—';
+
+  // Per-asset mini icons (active only)
+  const activeCryptos = S.crypto.filter(a => a.active && a.qty > 0);
+  const html = activeCryptos.map(a => {
+    const usd = a.symbol === 'USDT' ? 1.0 : (livePrices[a.symbol] || 0);
+    let priceStr;
+    if(usd >= 1000) priceStr = '$' + (usd/1000).toFixed(1) + 'K';
+    else if(usd >= 1) priceStr = '$' + usd.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+    else priceStr = '$' + usd.toFixed(4);
+    return `<div class="pf-asset-item">
+      <div class="pf-aico" style="background:${a.color}">${a.symbol.slice(0,2)}</div>
+      <div class="pf-asym">${a.symbol}</div>
+      <div class="pf-aprice">${priceStr}</div>
+    </div>`;
+  }).join('');
+  document.getElementById('pfAssets').innerHTML = html || `<span style="font-size:12px;color:var(--fg3);">Tidak ada posisi aktif</span>`;
 }
 
 // ─── FORMAT ───
@@ -501,78 +651,175 @@ function fQty(v,sym){
   if(sym==='SOL'||sym==='XRP') return v.toFixed(4);
   return v.toLocaleString('id-ID');
 }
+function fUSD(v){
+  if(v >= 100000) return '$'+Math.round(v).toLocaleString('en-US');
+  if(v >= 1) return '$'+v.toLocaleString('en-US',{minimumFractionDigits:2,maximumFractionDigits:2});
+  return '$'+v.toFixed(4);
+}
 
 // ─── CALC & RENDER METRICS ───
 function recalc(){
-  const btc=S.crypto[0];
-  const btcVal=btc.qty*btcIDR;
-  const capAmt=btcVal-btc.costBase;
-  const capPct=btc.costBase>0?(capAmt/btc.costBase)*100:1.13;
-  const curPct=9.89, curAmt=718522.48;
-  const totAmt=capAmt+curAmt;
-  const totPct=btc.costBase>0?(totAmt/btc.costBase)*100:11.02;
+  const btc = S.crypto[0];
+  const avgBuyUSDT = btc.avgBuyUSDT || DEF.crypto[0].avgBuyUSDT || 88580;
+  const origUSDTIDR = S.origUSDTIDR || DEF.origUSDTIDR || 15900;
+  const liveBTCUSD = livePrices.BTC || btcUSD || DEF.lastBtcUSD;
 
-  const g=(id,c)=>document.getElementById(id).className='m-val '+(c>=0?'pos':'neg');
-  document.getElementById('mVal').textContent=fIDR(btcVal);
-  g('mCap',capPct); document.getElementById('mCap').textContent=fPct(capPct);
-  document.getElementById('mCapAmt').textContent=(capAmt>=0?'+':'')+fRp(capAmt);
-  g('mCur',curPct); document.getElementById('mCur').textContent=fPct(curPct);
-  document.getElementById('mCurAmt').textContent='+'+fRp(curAmt);
-  g('mTot',totPct); document.getElementById('mTot').textContent=fPct(totPct);
-  document.getElementById('mTotAmt').textContent=(totAmt>=0?'+':'')+fRp(totAmt);
+  // Total portfolio IDR (all active)
+  let totalIDR = 0;
+  S.crypto.forEach(a => {
+    if(a.active && a.qty > 0){
+      const usd = a.symbol === 'USDT' ? 1.0 : (livePrices[a.symbol] || 0);
+      totalIDR += a.qty * usd * usdtIDR;
+    }
+  });
+  if(totalIDR === 0) totalIDR = btc.qty * liveBTCUSD * usdtIDR;
 
-  // Update last chart point for active period
+  // BTC breakdown using clean decomposition
+  const liveVal = btc.qty * liveBTCUSD * usdtIDR;
+  const costBase = btc.costBase || (btc.qty * avgBuyUSDT * origUSDTIDR);
+
+  // Capital gain = change in USD price, valued at original IDR rate
+  const capGainIDR = btc.qty * (liveBTCUSD - avgBuyUSDT) * origUSDTIDR;
+  // Currency gain = original USD holding × change in USDT/IDR rate
+  const curGainIDR = btc.qty * liveBTCUSD * (usdtIDR - origUSDTIDR);
+  const totalGain = totalIDR - costBase;
+
+  const capPct = costBase > 0 ? capGainIDR / costBase * 100 : 0;
+  const curPct = costBase > 0 ? curGainIDR / costBase * 100 : 0;
+  const totPct = costBase > 0 ? totalGain / costBase * 100 : 0;
+
+  const g = (id, c) => document.getElementById(id).className = 'm-val ' + (c >= 0 ? 'pos' : 'neg');
+
+  document.getElementById('mVal').textContent = fIDR(totalIDR);
+  document.getElementById('mValSub').textContent = `${btc.qty.toFixed(8)} BTC`;
+
+  g('mCap', capPct);
+  document.getElementById('mCap').textContent = fPct(capPct);
+  document.getElementById('mCapAmt').textContent = (capGainIDR >= 0 ? '+' : '') + fRp(Math.abs(capGainIDR));
+
+  g('mCur', curPct);
+  document.getElementById('mCur').textContent = fPct(curPct);
+  document.getElementById('mCurAmt').textContent = (curGainIDR >= 0 ? '+' : '-') + fRp(Math.abs(curGainIDR));
+
+  g('mTot', totPct);
+  document.getElementById('mTot').textContent = fPct(totPct);
+  document.getElementById('mTotAmt').textContent = (totalGain >= 0 ? '+' : '') + fRp(Math.abs(totalGain));
+
+  // Update last chart data point with live total
   if(chart){
-    const pd=CHART_PERIODS[activePeriod];
-    const updated=[...(pd?pd.values:(S.chartValues||DEF.chartValues))];
-    updated[updated.length-1]=Math.round(btcVal)||updated[updated.length-1];
-    chart.data.datasets[0].data=updated;
+    const pd = CHART_PERIODS[activePeriod];
+    const updated = [...(pd ? pd.values : (S.chartValues || DEF.chartValues))];
+    if(totalIDR > 0) updated[updated.length-1] = Math.round(totalIDR);
+    chart.data.datasets[0].data = updated;
     chart.update('none');
+    // Recalculate % change display
+    updateChartPct(updated);
   }
 
+  updateBanner();
   renderTables();
+}
+
+// ─── CHART % CHANGE ───
+function updateChartPct(vals){
+  if(!vals || vals.length < 2) return;
+  const startVal = vals[0];
+  const endVal = vals[vals.length-1];
+  const pct = startVal > 0 ? (endVal - startVal) / startVal * 100 : 0;
+  const el = document.getElementById('chartChangePct');
+  if(!el) return;
+  el.textContent = (pct >= 0 ? '+' : '') + pct.toFixed(2) + '%';
+  el.className = 'chart-change ' + (pct >= 0 ? 'pos' : 'neg');
 }
 
 // ─── TABLES ───
 function renderTables(){
-  const btcVal=S.crypto[0].qty*btcIDR;
+  const origUSDTIDR = S.origUSDTIDR || DEF.origUSDTIDR || 15900;
 
   // CRYPTO
-  let ch='';
-  S.crypto.forEach((a,i)=>{
-    const val=a.symbol==='BTC'?btcVal:0;
-    const rc=a.retPct>=0?'pos':'neg';
+  let ch = '';
+  S.crypto.forEach((a, i) => {
+    const usdPrice = a.symbol === 'USDT' ? 1.0 : (livePrices[a.symbol] || 0);
+    const valIDR = (a.active && a.qty > 0 && usdPrice > 0) ? a.qty * usdPrice * usdtIDR : 0;
+    const pairName = a.symbol === 'USDT' ? 'USDT/IDR' : `${a.symbol}/USDT`;
+
+    // Avg buy: use avgBuyUSDT × live USDT/IDR for dynamic IDR display
+    const avgBuyUSDT = a.avgBuyUSDT || (a.avgBuy ? Math.round(a.avgBuy / origUSDTIDR) : 0);
+    const avgBuyIDR_live = avgBuyUSDT > 0 ? avgBuyUSDT * usdtIDR : a.avgBuy;
+
+    // Return %: live for active positions
+    let retPct = a.retPct;
+    if(a.active && a.qty > 0 && a.costBase > 0 && valIDR > 0){
+      retPct = (valIDR - a.costBase) / a.costBase * 100;
+    }
+    const rc = retPct >= 0 ? 'pos' : 'neg';
+
+    // Current price in USDT
+    const priceUSD = usdPrice > 0 ? fUSD(usdPrice) : '—';
+
     if(editMode){
-      ch+=`<tr>
-        <td><div class="asset"><div class="aicon" style="background:${a.color}">${a.symbol.slice(0,2)}</div>
-          <div><div class="aname">${a.symbol}</div><div class="afull">${a.name}</div></div></div></td>
-        <td><input class="e-input" data-t="crypto" data-i="${i}" data-f="avgBuy" value="${a.avgBuy||0}" type="number"></td>
+      ch += `<tr>
+        <td><div class="asset">
+          <div class="aicon" style="background:${a.color}">${a.symbol.slice(0,2)}</div>
+          <div>
+            <div class="aname">${a.symbol}</div>
+            <div class="afull">${a.name}</div>
+            <div class="apair">${pairName}</div>
+          </div>
+        </div></td>
+        <td><input class="e-input" data-t="crypto" data-i="${i}" data-f="avgBuyUSDT" value="${avgBuyUSDT||0}" type="number" placeholder="USDT avg buy"></td>
+        <td class="mono" style="color:var(--fg2);">${a.active && usdPrice > 0 ? priceUSD : '—'}</td>
         <td><input class="e-input" data-t="crypto" data-i="${i}" data-f="qty" value="${a.qty}" type="number" step="0.00000001"></td>
-        <td class="mono">${a.active?fIDR(val):'<span class="closed">CLOSED</span>'}</td>
-        <td><input class="e-input" data-t="crypto" data-i="${i}" data-f="retPct" value="${a.retPct}" type="number" step="0.01" style="width:80px;"></td>
+        <td class="mono">${a.active && valIDR > 0 ? fIDR(valIDR) : '<span class="closed">CLOSED</span>'}</td>
+        <td><input class="e-input" data-t="crypto" data-i="${i}" data-f="retPct" value="${retPct.toFixed(2)}" type="number" step="0.01" style="width:80px;"></td>
       </tr>`;
     } else {
-      ch+=`<tr>
-        <td><div class="asset"><div class="aicon" style="background:${a.color}">${a.symbol.slice(0,2)}</div>
-          <div><div class="aname">${a.symbol}</div><div class="afull">${a.name}</div></div></div></td>
-        <td class="mono">${a.avgBuy?'IDR '+a.avgBuy.toLocaleString('id-ID'):'—'}</td>
-        <td class="mono">${a.qty?fQty(a.qty,a.symbol):'<span class="closed">CLOSED</span>'}</td>
-        <td class="mono">${a.active?fIDR(val):'—'}</td>
-        <td><span class="rpill ${rc}">${fPct(a.retPct)}</span></td>
+      const avgBuyDisplay = avgBuyIDR_live > 0
+        ? `<div class="td-avg">
+            <div class="mono">${'IDR ' + Math.round(avgBuyIDR_live).toLocaleString('id-ID')}</div>
+            <div class="sub">${avgBuyUSDT ? fUSD(avgBuyUSDT) : '—'}</div>
+           </div>`
+        : '<span style="color:var(--fg3);">—</span>';
+
+      ch += `<tr>
+        <td><div class="asset">
+          <div class="aicon" style="background:${a.color}">${a.symbol.slice(0,2)}</div>
+          <div>
+            <div class="aname">${a.symbol}</div>
+            <div class="afull">${a.name}</div>
+            <div class="apair">${pairName}</div>
+          </div>
+        </div></td>
+        <td>${a.avgBuy || avgBuyUSDT ? avgBuyDisplay : '<span style="color:var(--fg3);">—</span>'}</td>
+        <td class="mono">${a.active && usdPrice > 0 ? priceUSD : '<span style="color:var(--fg3);">—</span>'}</td>
+        <td class="mono">${a.qty ? fQty(a.qty, a.symbol) : '<span class="closed">CLOSED</span>'}</td>
+        <td class="mono">${a.active && valIDR > 0 ? fIDR(valIDR) : '<span style="color:var(--fg3);">—</span>'}</td>
+        <td><span class="rpill ${rc}">${fPct(retPct)}</span></td>
       </tr>`;
     }
   });
-  document.getElementById('cBody').innerHTML=ch;
-  document.getElementById('cFoot').innerHTML=`<tr class="tot-row">
-    <td colspan="3" style="font-weight:700;">Total Crypto</td>
-    <td class="mono">${fIDR(btcVal)}</td><td></td></tr>`;
+  document.getElementById('cBody').innerHTML = ch;
+
+  // Crypto total
+  let totalCryptoIDR = 0;
+  S.crypto.forEach(a => {
+    if(a.active && a.qty > 0){
+      const usd = a.symbol === 'USDT' ? 1.0 : (livePrices[a.symbol] || 0);
+      totalCryptoIDR += a.qty * usd * usdtIDR;
+    }
+  });
+  document.getElementById('cFoot').innerHTML = `<tr class="tot-row">
+    <td colspan="4" style="font-weight:700;">Total Crypto</td>
+    <td class="mono">${fIDR(totalCryptoIDR)}</td>
+    <td></td>
+  </tr>`;
 
   // IDX
-  let ih='';
-  S.idx.forEach((a,i)=>{
-    const rc=a.retPct>=0?'pos':'neg';
+  let ih = '';
+  S.idx.forEach((a, i) => {
+    const rc = a.retPct >= 0 ? 'pos' : 'neg';
     if(editMode){
-      ih+=`<tr>
+      ih += `<tr>
         <td><div class="asset"><div class="aicon" style="background:${a.color}">${a.symbol.slice(0,2)}</div>
           <div><div class="aname">${a.symbol}</div><div class="afull">${a.name}</div></div></div></td>
         <td><input class="e-input" data-t="idx" data-i="${i}" data-f="avgBuy" value="${a.avgBuy}" type="number" step="0.01"></td>
@@ -581,7 +828,7 @@ function renderTables(){
         <td><input class="e-input" data-t="idx" data-i="${i}" data-f="retPct" value="${a.retPct}" type="number" step="0.01" style="width:80px;"></td>
       </tr>`;
     } else {
-      ih+=`<tr>
+      ih += `<tr>
         <td><div class="asset"><div class="aicon" style="background:${a.color}">${a.symbol.slice(0,2)}</div>
           <div><div class="aname">${a.symbol}</div><div class="afull">${a.name}</div></div></div></td>
         <td class="mono">IDR ${a.avgBuy.toLocaleString('id-ID',{minimumFractionDigits:2})}</td>
@@ -591,130 +838,181 @@ function renderTables(){
       </tr>`;
     }
   });
-  document.getElementById('iBody').innerHTML=ih;
-  const wbsaRet=S.idx[1]?S.idx[1].retPct:285.94;
-  document.getElementById('iFoot').innerHTML=`<tr class="tot-row">
+  document.getElementById('iBody').innerHTML = ih;
+  document.getElementById('iFoot').innerHTML = `<tr class="tot-row">
     <td colspan="3" style="font-weight:700;">Total IDX</td>
     <td>—</td>
-    <td><span class="rpill pos">Avg +143.62%</span></td></tr>`;
+    <td><span class="rpill pos">Avg +143.62%</span></td>
+  </tr>`;
 }
 
 // ─── SWITCH PERIOD ───
 function switchPeriod(p){
-  activePeriod=p;
-  const pd=CHART_PERIODS[p];
-  if(!pd||!chart) return;
-  const vals=[...pd.values];
-  const live=Math.round(S.crypto[0].qty*btcIDR);
-  if(live) vals[vals.length-1]=live;
-  chart.data.labels=pd.labels;
-  chart.data.datasets[0].data=vals;
+  activePeriod = p;
+  const pd = CHART_PERIODS[p];
+  if(!pd || !chart) return;
+
+  const vals = [...pd.values];
+
+  // Replace last point with live total portfolio value
+  let totalIDR = 0;
+  S.crypto.forEach(a => {
+    if(a.active && a.qty > 0){
+      const usd = a.symbol === 'USDT' ? 1.0 : (livePrices[a.symbol] || 0);
+      totalIDR += a.qty * usd * usdtIDR;
+    }
+  });
+  if(totalIDR > 0) vals[vals.length-1] = Math.round(totalIDR);
+
+  chart.data.labels = pd.labels;
+  chart.data.datasets[0].data = vals;
   chart.update();
-  document.getElementById('dateRange').textContent=pd.range;
-  document.getElementById('chartSub').textContent=pd.sub;
+
+  document.getElementById('dateRange').textContent = pd.range;
+  document.getElementById('chartSub').textContent = pd.sub;
+
+  // % change for this period
+  updateChartPct(vals);
 }
 
 // ─── CHART ───
 function initChart(){
-  const canvas=document.getElementById('pfChart');
-  const ctx=canvas.getContext('2d');
-  const pd=CHART_PERIODS.all;
-  const labels=pd.labels;
-  const values=[...pd.values];
-  values[values.length-1]=Math.round(S.crypto[0].qty*btcIDR)||values[values.length-1];
+  const canvas = document.getElementById('pfChart');
+  const ctx = canvas.getContext('2d');
+  const pd = CHART_PERIODS.all;
+  const labels = pd.labels;
+  const values = [...pd.values];
 
-  const grad=ctx.createLinearGradient(0,0,0,180);
+  // Calculate live total for last point
+  let totalIDR = 0;
+  S.crypto.forEach(a => {
+    if(a.active && a.qty > 0){
+      const usd = a.symbol === 'USDT' ? 1.0 : (livePrices[a.symbol] || 0);
+      totalIDR += a.qty * usd * usdtIDR;
+    }
+  });
+  if(totalIDR > 0) values[values.length-1] = Math.round(totalIDR);
+  else values[values.length-1] = values[values.length-1] || Math.round(S.crypto[0].qty * btcIDR);
+
+  const grad = ctx.createLinearGradient(0,0,0,180);
   grad.addColorStop(0,'rgba(16,217,145,.2)');
   grad.addColorStop(1,'rgba(16,217,145,0)');
 
-  chart=new Chart(ctx,{
-    type:'line',
-    data:{
+  chart = new Chart(ctx, {
+    type: 'line',
+    data: {
       labels,
       datasets:[{
-        data:values,
-        borderColor:'#10d991',
-        backgroundColor:grad,
-        borderWidth:2,
-        pointRadius:3,
-        pointBackgroundColor:'#10d991',
-        pointBorderColor:'transparent',
-        pointHoverRadius:5,
-        tension:0.38,
-        fill:true,
+        data: values,
+        borderColor: '#10d991',
+        backgroundColor: grad,
+        borderWidth: 2,
+        pointRadius: 3,
+        pointBackgroundColor: '#10d991',
+        pointBorderColor: 'transparent',
+        pointHoverRadius: 5,
+        tension: 0.38,
+        fill: true,
       }]
     },
     options:{
-      responsive:true,maintainAspectRatio:false,
+      responsive: true, maintainAspectRatio: false,
       interaction:{mode:'index',intersect:false},
       plugins:{
         legend:{display:false},
         tooltip:{
-          backgroundColor:'#12162a',borderColor:'#1f2440',borderWidth:1,
-          titleColor:'#7a88b0',bodyColor:'#dde3f4',
-          callbacks:{label:c=>'IDR '+c.raw.toLocaleString('id-ID')}
+          backgroundColor:'#12162a', borderColor:'#1f2440', borderWidth:1,
+          titleColor:'#7a88b0', bodyColor:'#dde3f4',
+          callbacks:{label: c => 'IDR ' + c.raw.toLocaleString('id-ID')}
         }
       },
       scales:{
-        x:{grid:{color:'#1f2440'},ticks:{color:'#7a88b0',font:{size:11}}},
-        y:{grid:{color:'#1f2440'},position:'right',
-          ticks:{color:'#7a88b0',font:{size:11},callback:v=>'IDR '+(v/1e6).toFixed(1)+'M'}}
+        x:{grid:{color:'#1f2440'}, ticks:{color:'#7a88b0', font:{size:11}}},
+        y:{grid:{color:'#1f2440'}, position:'right',
+          ticks:{color:'#7a88b0', font:{size:11}, callback: v => 'IDR '+(v/1e6).toFixed(1)+'M'}}
       }
     }
   });
+
+  // Set initial % change
+  updateChartPct(values);
 }
 
 // ─── EDIT ───
 function setEdit(on){
-  editMode=on;
-  document.getElementById('editBar').hidden=!on;
-  const eb=document.getElementById('editBtn');
-  eb.innerHTML=on
-    ?'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Selesai Edit'
-    :'<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit';
+  editMode = on;
+  document.getElementById('editBar').hidden = !on;
+  const eb = document.getElementById('editBtn');
+  eb.innerHTML = on
+    ? '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><line x1="18" y1="6" x2="6" y2="18"/><line x1="6" y1="6" x2="18" y2="18"/></svg> Selesai Edit'
+    : '<svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.5"><path d="M11 4H4a2 2 0 0 0-2 2v14a2 2 0 0 0 2 2h14a2 2 0 0 0 2-2v-7"/><path d="M18.5 2.5a2.121 2.121 0 0 1 3 3L12 15l-4 1 1-4 9.5-9.5z"/></svg> Edit';
   renderTables();
 }
 
 function saveEdits(){
-  document.querySelectorAll('[data-t]').forEach(inp=>{
-    const t=inp.dataset.t,i=+inp.dataset.i,f=inp.dataset.f;
-    const v=parseFloat(inp.value);
-    if(!isNaN(v)) S[t][i][f]=v;
+  document.querySelectorAll('[data-t]').forEach(inp => {
+    const t = inp.dataset.t, i = +inp.dataset.i, f = inp.dataset.f;
+    const v = parseFloat(inp.value);
+    if(!isNaN(v)) S[t][i][f] = v;
   });
-  S.crypto[0].active=S.crypto[0].qty>0;
-  saveS(); setEdit(false); recalc();
+  // Rebuild avgBuy IDR from avgBuyUSDT for display consistency
+  S.crypto.forEach(a => {
+    if(a.avgBuyUSDT && a.avgBuyUSDT > 0){
+      a.avgBuy = Math.round(a.avgBuyUSDT * (S.origUSDTIDR || DEF.origUSDTIDR || 15900));
+    }
+    a.active = a.qty > 0;
+    if(a.active && a.qty > 0 && a.avgBuyUSDT > 0){
+      a.costBase = a.qty * a.avgBuyUSDT * (S.origUSDTIDR || DEF.origUSDTIDR || 15900);
+    }
+  });
+  saveS();
+  setEdit(false);
+  recalc();
   toast('Portfolio disimpan ✓','ok');
 }
 
 // ─── TOAST ───
 let tT;
-function toast(msg,type=''){
-  const el=document.getElementById('toast');
-  el.textContent=msg; el.className='toast show'+(type?' '+type:'');
-  clearTimeout(tT); tT=setTimeout(()=>{el.className='toast';},2500);
+function toast(msg, type=''){
+  const el = document.getElementById('toast');
+  el.textContent = msg; el.className = 'toast show' + (type ? ' '+type : '');
+  clearTimeout(tT); tT = setTimeout(() => { el.className = 'toast'; }, 2500);
 }
 
 // ─── THEME ───
 function toggleTheme(){
-  const r=document.documentElement;
-  const n=r.getAttribute('data-theme')==='light'?'dark':'light';
-  r.setAttribute('data-theme',n);
-  document.getElementById('themeBtn').textContent=n==='dark'?'☀️':'🌙';
-  try{localStorage.setItem('iqbal_theme',n);}catch(e){}
+  const r = document.documentElement;
+  const n = r.getAttribute('data-theme') === 'light' ? 'dark' : 'light';
+  r.setAttribute('data-theme', n);
+  document.getElementById('themeBtn').textContent = n === 'dark' ? '☀️' : '🌙';
+  try{ localStorage.setItem('iqbal_theme', n); }catch(e){}
 }
 
 // ─── EVENTS ───
-document.getElementById('editBtn').addEventListener('click',()=>setEdit(!editMode));
-document.getElementById('saveBtn').addEventListener('click',saveEdits);
-document.getElementById('cancelBtn').addEventListener('click',()=>setEdit(false));
-document.getElementById('themeBtn').addEventListener('click',toggleTheme);
-document.getElementById('refreshBtn').addEventListener('click',()=>{setStatus('offline','Fetching…');fetchPrice();toast('Memperbarui harga…');});
-document.getElementById('rateBtn').addEventListener('click',()=>{
-  const v=parseFloat(document.getElementById('rateInput').value);
-  if(!isNaN(v)&&v>1000){S.usdIdrRate=v;saveS();fetchPrice();toast('Rate USD/IDR diperbarui');}
+document.getElementById('editBtn').addEventListener('click', () => setEdit(!editMode));
+document.getElementById('saveBtn').addEventListener('click', saveEdits);
+document.getElementById('cancelBtn').addEventListener('click', () => setEdit(false));
+document.getElementById('themeBtn').addEventListener('click', toggleTheme);
+document.getElementById('refreshBtn').addEventListener('click', () => {
+  setBannerStatus('offline','Fetching…');
+  fetchAllPrices();
+  toast('Memperbarui harga…');
 });
-document.querySelectorAll('.dchip').forEach(c=>c.addEventListener('click',function(){
-  document.querySelectorAll('.dchip').forEach(x=>x.classList.remove('active'));
+document.getElementById('rateBtn').addEventListener('click', () => {
+  const v = parseFloat(document.getElementById('rateInput').value);
+  if(!isNaN(v) && v > 1000){
+    S.usdIdrRate = v;
+    usdtIDR = v;
+    S.lastUSDTIDR = v;
+    btcIDR = Math.round(btcUSD * v);
+    saveS();
+    updateBanner();
+    recalc();
+    toast('Rate USDT/IDR diperbarui');
+  }
+});
+document.querySelectorAll('.dchip').forEach(c => c.addEventListener('click', function(){
+  document.querySelectorAll('.dchip').forEach(x => x.classList.remove('active'));
   this.classList.add('active');
   switchPeriod(this.dataset.p);
 }));
@@ -722,18 +1020,23 @@ document.querySelectorAll('.dchip').forEach(c=>c.addEventListener('click',functi
 // ─── INIT ───
 (function init(){
   try{
-    const t=localStorage.getItem('iqbal_theme');
-    if(t){document.documentElement.setAttribute('data-theme',t);
-      document.getElementById('themeBtn').textContent=t==='dark'?'☀️':'🌙';}
+    const t = localStorage.getItem('iqbal_theme');
+    if(t){
+      document.documentElement.setAttribute('data-theme', t);
+      document.getElementById('themeBtn').textContent = t === 'dark' ? '☀️' : '🌙';
+    }
   }catch(e){}
-  document.getElementById('rateInput').value=S.usdIdrRate||15900;
-  // Show cached first
-  if(S.lastBtcIDR){btcIDR=S.lastBtcIDR;btcUSD=S.lastBtcUSD;showPrice('cached');}
-  else{btcIDR=DEF.lastBtcIDR;btcUSD=DEF.lastBtcUSD;showPrice('offline');}
+
+  document.getElementById('rateInput').value = S.usdIdrRate || DEF.usdIdrRate;
+
+  // Show cached data immediately
+  updateBanner();
   initChart();
   recalc();
-  // Fetch live
-  fetchPrice();
-  setInterval(fetchPrice,60000);
+  switchPeriod(activePeriod); // set initial % change
+
+  // Fetch live prices
+  fetchAllPrices();
+  setInterval(fetchAllPrices, 60000);
 })();
 </script>

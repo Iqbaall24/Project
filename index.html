@@ -855,6 +855,9 @@ let idxMarketCaps = {};
 let cryptoMarketCaps = {};
 let cryptoLogos = {};
 let livePriceChanges = {}; // 24h % change per symbol (from Binance)
+let logoStatus = {};       // url -> 'ok'|'fail' (prevents logo flicker across re-renders)
+let dayOpen = {};          // crypto 24h baseline: 00:00 UTC open price per symbol
+let chartData = {};        // period -> {labels, values, range, sub} built from real Binance klines
 
 // Modal state
 let modalState = {
@@ -964,6 +967,11 @@ const IDX_TV = {
   BMRI:'IDX:BMRI', BBNI:'IDX:BBNI',
   IPCC:'IDX:IPCC', IHSG:'IDX:COMPOSITE'
 };
+// Crypto symbols via TradingView (Binance) — ensures % matches TradingView UI exactly
+const CRYPTO_TV = {
+  BTC:'BINANCE:BTCUSDT', ETH:'BINANCE:ETHUSDT',
+  SOL:'BINANCE:SOLUSDT', XRP:'BINANCE:XRPUSDT'
+};
 
 function isIDXMarketOpen(){
   const now = new Date();
@@ -974,86 +982,104 @@ function isIDXMarketOpen(){
   return (mins>=120&&mins<=270)||(mins>=390&&mins<=540);
 }
 
-function tvEncode(obj){
-  const s = JSON.stringify(obj);
-  return `~m~${s.length}~m~${s}`;
-}
-
-let tvWs = null;
-let tvSession = '';
-
 function setIDXStatus(text){
   const el = document.getElementById('idxStatusLabel');
   if(el) el.textContent = text;
 }
 
-function initIDXStream(){
-  // Always connect TradingView WS — lp field gives last close even when market is closed
-  const marketOpen = isIDXMarketOpen();
-  setIDXStatus(marketOpen ? 'Indonesian Stocks · Connecting…' : 'IDX · Connecting (Last Price)…');
+// ─── IDX DATA via Yahoo Finance (through CORS proxy) ───
+// TradingView's WebSocket rejects the GitHub Pages origin, and Stooq/Yahoo
+// have no CORS headers, so a static site must route through a CORS proxy.
+// We try a chain of proxies, cache the last good result in localStorage, and
+// degrade gracefully (last close) when the market is shut or a fetch fails.
+const CORS_PROXIES = [
+  u => `https://corsproxy.io/?url=${encodeURIComponent(u)}`,
+  u => `https://api.allorigins.win/raw?url=${encodeURIComponent(u)}`,
+  u => `https://thingproxy.freeboard.io/fetch/${u}`,
+];
 
-  // Random session ID
-  const chars = 'abcdefghijklmnopqrstuvwxyz0123456789';
-  tvSession = 'qs_' + Array.from({length:12}, ()=>chars[Math.floor(Math.random()*chars.length)]).join('');
+async function proxyFetchJSON(url){
+  for(const mk of CORS_PROXIES){
+    try{
+      const r = await fetch(mk(url), {signal: AbortSignal.timeout(9000)});
+      if(!r.ok) continue;
+      return await r.json();
+    }catch(e){ /* try next proxy */ }
+  }
+  throw new Error('all CORS proxies failed');
+}
 
-  try{ tvWs = new WebSocket('wss://data.tradingview.com/socket.io/websocket'); }
-  catch(e){ setIDXStatus('IDX · Offline'); return; }
-
-  tvWs.onopen = ()=>{
-    tvWs.send(tvEncode({m:'set_auth_token',       p:['unauthorized_user_token']}));
-    tvWs.send(tvEncode({m:'quote_create_session', p:[tvSession]}));
-    // Include market_cap_basic for market cap column
-    tvWs.send(tvEncode({m:'quote_set_fields', p:[tvSession,'lp','ch','chp','market_cap_basic']}));
-    const syms = Object.values(IDX_TV);
-    tvWs.send(tvEncode({m:'quote_add_symbols', p:[tvSession, ...syms]}));
-    setIDXStatus(isIDXMarketOpen() ? 'Indonesian Stocks · Live · TradingView' : 'IDX Closed · Last Price · TradingView');
-  };
-
-  tvWs.onmessage = (evt)=>{
-    const raw = evt.data;
-    let pos = 0;
-    while(pos < raw.length){
-      const m1 = raw.indexOf('~m~', pos);
-      if(m1 === -1) break;
-      const m2 = raw.indexOf('~m~', m1+3);
-      if(m2 === -1) break;
-      const len = parseInt(raw.substring(m1+3, m2));
-      if(isNaN(len)){ pos = m2+3; continue; }
-      const content = raw.substring(m2+3, m2+3+len);
-      pos = m2+3+len;
-
-      // Heartbeat
-      if(content.startsWith('~h~')){
-        tvWs.send(`~m~${content.length}~m~${content}`);
-        continue;
-      }
-
-      // JSON message
-      try{
-        const msg = JSON.parse(content);
-        if(msg.m === 'qsd'){
-          const data = msg.p[1];
-          if(data.s !== 'ok') continue;
-          const tvSym = data.n;
-          const v = data.v || {};
-          const localSym = Object.entries(IDX_TV).find(([,tv])=>tv===tvSym)?.[0];
-          if(!localSym) continue;
-          if(v.lp && v.lp > 0) idxPrices[localSym] = Math.round(v.lp);
-          if(v.chp !== undefined) idxChanges[localSym] = {pct: v.chp, amt: Math.round(v.ch||0)};
-          if(v.market_cap_basic && v.market_cap_basic > 0) idxMarketCaps[localSym] = v.market_cap_basic;
-        }
-      }catch(e){}
+// Restore last cached IDX snapshot immediately so the table is never blank
+function restoreIDXCache(){
+  try{
+    const c = S.idxCache;
+    if(c && c.prices){
+      Object.assign(idxPrices, c.prices);
+      if(c.changes) Object.assign(idxChanges, c.changes);
     }
-    renderTables();
-  };
+  }catch(e){}
+}
 
-  tvWs.onclose = ()=>{
-    setIDXStatus('IDX · Reconnecting…');
-    // Always reconnect TradingView WS regardless of market hours (lp gives last close)
-    setTimeout(()=>{ initIDXStream(); }, 5000);
-  };
+async function fetchIDXData(){
+  setIDXStatus('IDX · Updating…');
+  let okCount = 0;
+  await Promise.allSettled(Object.entries(IDX_TICKERS).map(async ([sym, yf])=>{
+    try{
+      const url = `https://query1.finance.yahoo.com/v8/finance/chart/${yf}?range=5d&interval=1d`;
+      const j = await proxyFetchJSON(url);
+      const res = j && j.chart && j.chart.result && j.chart.result[0];
+      if(!res || !res.meta) return;
+      const meta = res.meta;
+      const price = meta.regularMarketPrice;
+      const prev = meta.chartPreviousClose || meta.previousClose;
+      if(price > 0){
+        idxPrices[sym] = Math.round(price);
+        if(prev > 0){
+          const amt = price - prev;
+          idxChanges[sym] = {pct: amt/prev*100, amt: Math.round(amt)};
+        }
+        okCount++;
+      }
+    }catch(e){ /* keep cached value for this symbol */ }
+  }));
 
-  tvWs.onerror = ()=>{ try{ tvWs.close(); }catch(e){} };
+  if(okCount > 0){
+    try{
+      S.idxCache = {prices:{...idxPrices}, changes:{...idxChanges}, ts:Date.now()};
+      saveS();
+    }catch(e){}
+    setIDXStatus(isIDXMarketOpen() ? 'IDX · Live · Yahoo' : 'IDX · Last Close · Yahoo');
+  } else {
+    const haveCache = S.idxCache && S.idxCache.ts;
+    setIDXStatus(haveCache ? 'IDX · Last Close (cached)' : 'IDX · Data unavailable');
+  }
+  renderTables();
+}
+
+// ─── CRYPTO 24H BASELINE (00:00 UTC daily open) ───
+// TradingView shows the daily-candle change (price vs today's UTC open), not
+// Binance's rolling 24h window — this is why the two numbers differed. We fetch
+// the daily open and compute the % live on every tick so it matches TradingView.
+const CRYPTO_SYMS = ['BTC','ETH','SOL','XRP'];
+async function fetchDayOpen(){
+  await Promise.allSettled(CRYPTO_SYMS.map(async sym=>{
+    try{
+      const r = await fetch(`https://api.binance.com/api/v3/klines?symbol=${sym}USDT&interval=1d&limit=1`,
+        {signal: AbortSignal.timeout(8000)});
+      if(!r.ok) return;
+      const k = await r.json();
+      const open = parseFloat(k[0][1]);
+      if(open > 0) dayOpen[sym] = open;
+    }catch(e){}
+  }));
+  recomputeCryptoChanges();
+  updateBanner(); renderTables();
+}
+function recomputeCryptoChanges(){
+  CRYPTO_SYMS.forEach(sym=>{
+    const p = livePrices[sym], o = dayOpen[sym];
+    if(p > 0 && o > 0) livePriceChanges[sym] = (p - o) / o * 100;
+  });
 }
 
 // ─── BINANCE WEBSOCKET ───
@@ -1074,8 +1100,9 @@ function initWebSocket(){
           const sym = d.symbol.replace('USDT','');
           const p = parseFloat(d.lastPrice);
           if(!isNaN(p) && p > 0) livePrices[sym] = p;
-          const chg = parseFloat(d.priceChangePercent);
-          if(!isNaN(chg)) livePriceChanges[sym] = chg;
+          // Prefer day-open change (matches TradingView); fall back to rolling P
+          if(dayOpen[sym] > 0 && p > 0){ livePriceChanges[sym] = (p - dayOpen[sym]) / dayOpen[sym] * 100; }
+          else { const chg = parseFloat(d.priceChangePercent); if(!isNaN(chg)) livePriceChanges[sym] = chg; }
         });
         livePrices.USDT = 1.0;
         btcUSD = livePrices.BTC || btcUSD;
@@ -1107,9 +1134,10 @@ function initWebSocket(){
         const price = parseFloat(d.c);
         if(isNaN(price) || price <= 0) return;
         livePrices[sym] = price;
-        // Store 24h % change (ticker stream field P)
-        const chgPct = parseFloat(d.P);
-        if(!isNaN(chgPct)) livePriceChanges[sym] = chgPct;
+        // 24h % = change vs today's 00:00 UTC open (matches TradingView daily candle).
+        // Fall back to Binance rolling P only until dayOpen is fetched.
+        if(dayOpen[sym] > 0){ livePriceChanges[sym] = (price - dayOpen[sym]) / dayOpen[sym] * 100; }
+        else { const chgPct = parseFloat(d.P); if(!isNaN(chgPct)) livePriceChanges[sym] = chgPct; }
         if(sym === 'BTC'){
           btcUSD = price;
           btcIDR = Math.round(price * usdtIDR);
@@ -1161,18 +1189,26 @@ function updateBanner(){
     el.textContent = '$0.00';
   }
 
-  // 24h change: use stored today-start value; if no trades yet show —
-  const todayStart = S._todayStart || 0;
+  // 24h portfolio change: weighted average of each asset's TradingView chp
+  let tw24h = 0, wt24h = 0;
+  S.crypto.forEach(a => {
+    if(a.active && a.qty > 0 && a.symbol !== 'USDT'){
+      const usd = livePrices[a.symbol] || 0;
+      const val = a.qty * usd;
+      const chg = livePriceChanges[a.symbol];
+      if(val > 0 && chg !== undefined){ tw24h += val * chg; wt24h += val; }
+    }
+  });
+  const portfolio24h = wt24h > 0 ? tw24h / wt24h : null;
   const pf24h = document.getElementById('pf24hPill');
-  if(totalIDR === 0 || todayStart === 0){
+  if(totalUSDT === 0 || portfolio24h === null){
     pf24h.className = 'rpill offline';
     pf24h.innerHTML = '— 24h';
   } else {
-    const change24h = (totalIDR - todayStart) / todayStart * 100;
-    const change24hAmt = totalIDR - todayStart;
-    pf24h.className = 'rpill ' + (change24h >= 0 ? 'pos' : 'neg');
-    const sign = change24h >= 0 ? '+' : '';
-    pf24h.innerHTML = `${sign}${change24h.toFixed(2)}% &nbsp;<span style="font-weight:400;opacity:.8;">(${change24hAmt >= 0 ? '+' : '-'}${fRp(Math.abs(change24hAmt))})</span> 24h`;
+    const change24hAmt = totalUSDT * (portfolio24h / 100) * usdtIDR;
+    pf24h.className = 'rpill ' + (portfolio24h >= 0 ? 'pos' : 'neg');
+    const sign = portfolio24h >= 0 ? '+' : '';
+    pf24h.innerHTML = `${sign}${portfolio24h.toFixed(2)}% &nbsp;<span style="font-weight:400;opacity:.8;">(${change24hAmt >= 0 ? '+' : '-'}${fRp(Math.abs(change24hAmt))})</span> 24h`;
   }
 
   document.getElementById('pfTs').textContent = S.lastBtcTime
@@ -1234,7 +1270,7 @@ function recalc(){
   document.getElementById('mTotAmt').textContent = (totalGain>=0?'+':'')+fRp(Math.abs(totalGain));
 
   if(chart){
-    const pd = CHART_PERIODS[activePeriod];
+    const pd = getPeriodData(activePeriod);
     const updated = [...(pd ? pd.values : (S.chartValues || DEF.chartValues))];
     // Always set last point to current total (even if 0)
     updated[updated.length-1] = Math.round(totalIDR);
@@ -1251,6 +1287,31 @@ function recalc(){
 function updateChartPct(vals, totalIDR){
   const el = document.getElementById('chartChangePct');
   if(!el) return;
+
+  // For "Today" period: if only one meaningful data point exists,
+  // use the portfolio's weighted 24h change from TradingView (matches banner)
+  if(activePeriod === 'today'){
+    const nonZero = vals ? vals.filter(v => v > 0) : [];
+    if(nonZero.length <= 1){
+      // Calculate weighted 24h from livePriceChanges
+      let tw24h = 0, wt24h = 0;
+      S.crypto.forEach(a => {
+        if(a.active && a.qty > 0 && a.symbol !== 'USDT'){
+          const usd = livePrices[a.symbol] || 0;
+          const val = a.qty * usd;
+          const chg = livePriceChanges[a.symbol];
+          if(val > 0 && chg !== undefined){ tw24h += val * chg; wt24h += val; }
+        }
+      });
+      if(wt24h > 0){
+        const pct24h = tw24h / wt24h;
+        el.textContent = (pct24h >= 0 ? '+' : '') + pct24h.toFixed(2) + '%';
+        el.className = 'chart-change ' + (pct24h >= 0 ? 'pos' : 'neg');
+        return;
+      }
+    }
+  }
+
   if(!vals || vals.length < 2 || (totalIDR === 0)){
     el.textContent = '—';
     el.className = 'chart-change';
@@ -1305,15 +1366,21 @@ function renderTables(){
     }
   }
 
-  // Helper: asset logo cell
+  // Helper: asset logo cell — uses global logoStatus cache to stop flicker.
+  // Once a URL is known to fail, we render the static colored fallback only
+  // (no <img>), so renderTables() on every price tick never re-requests it.
   function logoCell(type, sym, color){
     const logoUrl = type === 'crypto'
       ? (cryptoLogos[sym] || `https://s3-symbol-logo.tradingview.com/crypto/XTVC${sym}--small.svg`)
       : `https://s3-symbol-logo.tradingview.com/${sym.toLowerCase()}--small.svg`;
+    if(logoStatus[logoUrl] === 'fail'){
+      return `<div class="aicon-wrap"><div class="aicon-fb aicon" style="background:${color}">${sym.slice(0,2)}</div></div>`;
+    }
     return `<div class="aicon-wrap">
-      <img class="alogo" src="${logoUrl}" alt="${sym}"
-        onerror="this.hidden=true;this.nextElementSibling.hidden=false;">
-      <div class="aicon-fb aicon" style="background:${color};display:none;">${sym.slice(0,2)}</div>
+      <img class="alogo" src="${logoUrl}" alt="${sym}" loading="eager"
+        onload="logoStatus['${logoUrl}']='ok'"
+        onerror="logoStatus['${logoUrl}']='fail';this.hidden=true;this.nextElementSibling.hidden=false;">
+      <div class="aicon-fb aicon" style="background:${color}" hidden>${sym.slice(0,2)}</div>
     </div>`;
   }
 
@@ -1502,10 +1569,13 @@ function renderTables(){
 // ─── SWITCH PERIOD ───
 function switchPeriod(p){
   activePeriod = p;
-  const pd = CHART_PERIODS[p];
+  const pd = getPeriodData(p);
   if(!pd || !chart) return;
 
-  const labels = p === 'today' ? getTodayLabels() : pd.labels;
+  const hasReal = !!chartData[p];
+  // For real intraday "today" data the last label is the live timestamp; for the
+  // placeholder we still swap in rolling UTC labels.
+  const labels = (p === 'today' && !hasReal) ? getTodayLabels() : [...pd.labels];
   const vals = [...pd.values];
 
   let totalIDR = 0;
@@ -1523,7 +1593,7 @@ function switchPeriod(p){
 
   document.getElementById('dateRange').textContent = pd.range;
   document.getElementById('chartSub').textContent = pd.sub;
-  updateChartPct(vals);
+  updateChartPct(vals, totalIDR);
 }
 
 // ─── NOW LINE PLUGIN (TradingView-style) ───
@@ -1570,12 +1640,85 @@ const nowLinePlugin = {
   }
 };
 
+// ─── REAL HISTORICAL CHART (Binance klines) ───
+// Reconstructs portfolio value over time = Σ(qty × historical close) × USDT/IDR.
+// Replaces the old hardcoded placeholder series so each timeframe reflects real
+// market movement, the header date range is real, and direction/% are correct.
+async function binKlines(symbol, interval, limit, startTime){
+  let url = `https://api.binance.com/api/v3/klines?symbol=${symbol}&interval=${interval}&limit=${limit}`;
+  if(startTime) url += `&startTime=${startTime}`;
+  const r = await fetch(url, {signal: AbortSignal.timeout(10000)});
+  if(!r.ok) throw new Error('klines '+r.status);
+  return r.json(); // [[openTime,open,high,low,close,...], ...]
+}
+
+const MONTHS_ABBR = ['Jan','Feb','Mar','Apr','May','Jun','Jul','Aug','Sep','Oct','Nov','Dec'];
+function fmtChartLabel(ts, kind){
+  const d = new Date(ts);
+  if(kind === 'hour') return String(d.getUTCHours()).padStart(2,'0')+':00';
+  if(kind === 'day')  return d.getUTCDate()+' '+MONTHS_ABBR[d.getUTCMonth()];
+  return MONTHS_ABBR[d.getUTCMonth()]+" '"+String(d.getUTCFullYear()).slice(2);
+}
+function fmtChartRange(t0, t1){
+  const f = t => { const d = new Date(t);
+    return String(d.getUTCDate()).padStart(2,'0')+'/'+String(d.getUTCMonth()+1).padStart(2,'0')+'/'+d.getUTCFullYear(); };
+  return f(t0)+' – '+f(t1);
+}
+
+async function buildChartData(){
+  const held = S.crypto.filter(a => a.active && a.qty > 0 && a.symbol !== 'USDT');
+  const usdtQty = S.crypto.filter(a => a.active && a.symbol === 'USDT').reduce((s,a)=>s+a.qty, 0);
+  if(!held.length) return; // nothing with a price history to chart
+  const rate = usdtIDR || DEF.lastUSDTIDR || 16000;
+  const now = new Date();
+  const midnightUTC = Date.UTC(now.getUTCFullYear(), now.getUTCMonth(), now.getUTCDate());
+  const jan1 = Date.UTC(now.getUTCFullYear(), 0, 1);
+  const ytdDays = Math.min(Math.ceil((now - jan1)/86400000) + 1, 365);
+
+  const cfg = {
+    today: {interval:'1h', startTime:midnightUTC, limit:24,      lk:'hour', sub:'Today · IDR'},
+    '7d':  {interval:'4h', limit:42,                               lk:'day',  sub:'7 Days · IDR'},
+    '12m': {interval:'1w', limit:53,                               lk:'mon',  sub:'12 Months · IDR'},
+    ytd:   {interval:'1d', startTime:jan1, limit:ytdDays,          lk:'mon',  sub:'Year to Date · IDR'},
+    fy:    {interval:'1d', startTime:jan1, limit:ytdDays,          lk:'mon',  sub:'Financial Year · IDR'},
+    all:   {interval:'1w', limit:160,                              lk:'mon',  sub:'All Time · IDR'},
+  };
+
+  for(const [period, c] of Object.entries(cfg)){
+    try{
+      const series = await Promise.all(held.map(async a => ({
+        qty: a.qty,
+        kl: await binKlines(a.symbol+'USDT', c.interval, c.limit, c.startTime)
+      })));
+      const valid = series.filter(s => Array.isArray(s.kl) && s.kl.length);
+      if(!valid.length) continue;
+      const n = Math.min(...valid.map(s => s.kl.length));
+      if(n < 2) continue;
+      const base = valid[0].kl;
+      const labels = [], values = [], times = [];
+      for(let i=0;i<n;i++){
+        let usdt = usdtQty;
+        valid.forEach(s => { usdt += s.qty * parseFloat(s.kl[s.kl.length - n + i][4]); });
+        const t = base[base.length - n + i][0];
+        times.push(t);
+        labels.push(fmtChartLabel(t, c.lk));
+        values.push(Math.round(usdt * rate));
+      }
+      chartData[period] = {labels, values, range: fmtChartRange(times[0], times[n-1]), sub: c.sub};
+    }catch(e){ /* keep existing placeholder for this period */ }
+  }
+  if(chart) switchPeriod(activePeriod); // redraw current view with real data
+}
+
+// Returns real klines-based data when loaded, else the placeholder
+function getPeriodData(p){ return chartData[p] || CHART_PERIODS[p]; }
+
 // ─── INIT CHART ───
 function initChart(){
   const canvas = document.getElementById('pfChart');
   const ctx    = canvas.getContext('2d');
-  const pd     = CHART_PERIODS.all;
-  const labels = pd.labels;
+  const pd     = getPeriodData('all');
+  const labels = [...pd.labels];
   const values = [...pd.values];
 
   let totalIDR = 0;
@@ -1601,11 +1744,11 @@ function initChart(){
         borderColor: '#10d991',
         backgroundColor: grad,
         borderWidth: 2,
-        pointRadius: 3,
+        pointRadius: (c) => (c.dataset.data.length > 30 ? 0 : 3),
         pointBackgroundColor: '#10d991',
         pointBorderColor: 'transparent',
         pointHoverRadius: 5,
-        tension: 0.38,
+        tension: 0.3,
         fill: true,
       }]
     },
@@ -1622,7 +1765,8 @@ function initChart(){
         }
       },
       scales:{
-        x:{grid:{color:'#1f2440'}, ticks:{color:'#7a88b0', font:{size:11}}},
+        x:{grid:{color:'#1f2440'}, ticks:{color:'#7a88b0', font:{size:11},
+          autoSkip:true, maxTicksLimit:8, maxRotation:0}},
         y:{grid:{color:'#1f2440'}, position:'right',
           ticks:{color:'#7a88b0', font:{size:11}, callback: v => 'IDR '+(v/1e6).toFixed(1)+'M'}}
       }
@@ -1657,6 +1801,7 @@ function saveEdits(){
       a.costBase = a.qty * a.avgBuyUSDT * (S.origUSDTIDR || DEF.origUSDTIDR || 15900);
   });
   saveS(); setEdit(false); recalc();
+  buildChartData(); // rebuild history with the new quantities
   toast('Portfolio saved ✓','ok');
 }
 
@@ -2563,8 +2708,9 @@ document.getElementById('refreshBtn').addEventListener('click', () => {
   setBannerStatus('offline','Fetching…');
   fetchUSDTIDR();
   fetchCryptoData();
-  // Always reconnect TradingView WS (lp field gives last close even when market closed)
-  if(!tvWs || tvWs.readyState > 1) initIDXStream();
+  fetchIDXData();
+  fetchDayOpen();
+  buildChartData();
   if(!wsReady){
     if(wsConn){ try{ wsConn.close(); }catch(e){} }
     initWebSocket();
@@ -2602,11 +2748,12 @@ function initClock(){
   function tick(){
     try{
       const now = new Date();
-      const hh = String(now.getHours()).padStart(2,'0');
-      const mm = String(now.getMinutes()).padStart(2,'0');
-      const ss = String(now.getSeconds()).padStart(2,'0');
+      // Header clock — UTC (matches all data sources: Binance/TradingView)
+      const hh = String(now.getUTCHours()).padStart(2,'0');
+      const mm = String(now.getUTCMinutes()).padStart(2,'0');
+      const ss = String(now.getUTCSeconds()).padStart(2,'0');
       const el = document.getElementById('navClock');
-      if(el) el.textContent = `${hh}:${mm}:${ss} ${tzLabel}`;
+      if(el) el.textContent = `${hh}:${mm}:${ss} UTC`;
 
       // UTC clock under chart
       const witEl = document.getElementById('witClock');
@@ -2642,16 +2789,23 @@ function initClock(){
   fetchUSDTIDR();
   setInterval(fetchUSDTIDR, 60000);
 
-  // IDX prices — always use TradingView WS (lp = last close, works 24/7)
-  initIDXStream();
-  // Re-check every 5min — reconnect if WS dropped (no Yahoo Finance fallback)
-  setInterval(()=>{
-    if(!tvWs || tvWs.readyState > 1) initIDXStream();
-  }, 300000);
+  // IDX prices via Yahoo Finance (CORS proxy). Restore cache first so the
+  // table shows last-known values instantly, then refresh + poll every 60s.
+  restoreIDXCache();
+  fetchIDXData();
+  setInterval(fetchIDXData, 120000);
 
   // Fetch crypto market caps + logos from CoinGecko every 5 min
   fetchCryptoData();
   setInterval(fetchCryptoData, 300000);
+
+  // Crypto 24h baseline (00:00 UTC open) — refresh every 5 min
+  fetchDayOpen();
+  setInterval(fetchDayOpen, 300000);
+
+  // Real historical chart from Binance klines — build now + rebuild every 5 min
+  buildChartData();
+  setInterval(buildChartData, 300000);
 
   // Update today chart labels every 60s
   setInterval(updateTodayLabels, 60000);
